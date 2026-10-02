@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrador de Eventos Históricos</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body, html {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    /* THEMES */
+    body.theme-dark {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+    body.theme-dark .panel, 
+    body.theme-dark .modal-content, 
+    body.theme-dark header {
+      background-color: #1e1e1e;
+      border-color: #333;
+      color: #e0e0e0;
+    }
+    body.theme-dark input, 
+    body.theme-dark select, 
+    body.theme-dark textarea {
+      background-color: #2d2d2d;
+      color: #fff;
+      border-color: #444;
+    }
+    body.theme-dark .timeline-track {
+      background-color: #2a2a2a;
+    }
+
+    body.theme-light {
+      background-color: #f4f6f8;
+      color: #333;
+    }
+    body.theme-light .panel, 
+    body.theme-light .modal-content, 
+    body.theme-light header {
+      background-color: #ffffff;
+      border-color: #e0e0e0;
+      color: #333;
+    }
+    body.theme-light input, 
+    body.theme-light select, 
+    body.theme-light textarea {
+      background-color: #fff;
+      color: #333;
+      border-color: #ccc;
+    }
+    body.theme-light .timeline-track {
+      background-color: #e9ecef;
+    }
+
+    body.theme-ancient {
+      background-color: #f4eacc;
+      color: #3c2f2f;
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+    body.theme-ancient .panel, 
+    body.theme-ancient .modal-content, 
+    body.theme-ancient header {
+      background-color: #e8d8b0;
+      border-color: #b89b5e;
+      color: #3c2f2f;
+    }
+    body.theme-ancient input, 
+    body.theme-ancient select, 
+    body.theme-ancient textarea {
+      background-color: #fdf8eb;
+      color: #3c2f2f;
+      border-color: #b89b5e;
+      font-family: 'Georgia', serif;
+    }
+    body.theme-ancient .timeline-track {
+      background-color: #d0be90;
+    }
+
+    /* LAYOUT PRINCIPAL */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    header {
+      height: 48px;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid;
+      flex-shrink: 0;
+    }
+
+    .header-titles {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    main {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 48px);
+      overflow: hidden;
+    }
+
+    /* PAINEL LATERAL */
+    .sidebar {
+      width: 300px;
+      border-right: 1px solid;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 10px;
+      flex-shrink: 0;
+      height: 100%;
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sidebar-section h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
+    input, select, textarea, button {
+      padding: 6px 8px;
+      border: 1px solid;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    button:hover {
+      opacity: 0.85;
+    }
+
+    .btn-primary { background-color: #0066cc; color: #fff; border: none; }
+    .btn-danger { background-color: #cc0000; color: #fff; border: none; }
+    .btn-success { background-color: #2e7d32; color: #fff; border: none; }
+
+    .categories-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-height: 100px;
+      overflow: hidden;
+    }
+
+    .category-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .category-tag .btn-del-cat {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      font-size: 10px;
+      padding: 0 2px;
+    }
+
+    /* VIEWPORT PRINCIPAL */
+    .viewport {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      padding: 10px;
+      gap: 10px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .date-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .list-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .view-mode-container {
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* MODOS DE VISUALIZAÇÃO */
+    #timelineView {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      overflow-x: auto;
+      overflow-y: auto;
+    }
+
+    .timeline-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .timeline-label {
+      font-weight: bold;
+      font-size: 11px;
+      text-transform: uppercase;
+      position: sticky;
+      left: 0;
+      z-index: 5;
+    }
+
+    .timeline-track {
+      height: 36px;
+      width: 100%;
+      position: relative;
+      border-radius: 4px;
+      cursor: crosshair;
+    }
+
+    .timeline-event-pin {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      width: 6px;
+      margin-left: -3px;
+      border-radius: 2px;
+      cursor: pointer;
+      z-index: 2;
+      transition: transform 0.1s;
+    }
+
+    .timeline-event-pin:hover {
+      transform: scaleY(1.2) scaleX(1.5);
+      z-index: 10;
+    }
+
+    /* MODO LISTA PROPORCIONAL MULTICATEGORIA */
+    #listViewWrapper {
+      display: none;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .list-layout-container {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      overflow-y: auto;
+      height: 100%;
+      padding-bottom: 1rem;
+    }
+
+    .list-category-column {
+      min-width: 280px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-radius: 6px;
+      border: 1px solid;
+      height: max-content;
+      min-height: 100%;
+      transition: opacity 0.2s;
+    }
+
+    .list-category-column.dragging {
+      opacity: 0.4;
+    }
+
+    .list-column-header {
+      font-weight: bold;
+      font-size: 11px;
+      text-transform: uppercase;
+      padding: 8px;
+      border-radius: 4px 4px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: grab;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .list-column-header:active {
+      cursor: grabbing;
+    }
+
+    .btn-hide-column {
+      background: rgba(0,0,0,0.2);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 3px;
+      padding: 2px 4px;
+      font-size: 10px;
+    }
+
+    .vertical-events-track {
+      position: relative;
+      width: 100%;
+    }
+
+    .list-item-card {
+      position: absolute;
+      left: 0.5rem;
+      right: 0.5rem;
+      padding: 8px;
+      border: 1px solid;
+      border-left: 4px solid;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* MODAL DEDICADO PARA ORDENAÇÃO DE COLUNAS */
+    .sort-modal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .sort-modal-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      border: 1px solid rgba(128,128,128,0.3);
+      border-radius: 4px;
+      cursor: grab;
+      background: rgba(128,128,128,0.1);
+    }
+
+    .sort-modal-item:active {
+      cursor: grabbing;
+    }
+
+    .sort-modal-item.dragging {
+      opacity: 0.5;
+    }
+
+    /* TOOLTIPS E MODAIS */
+    .tooltip {
+      position: absolute;
+      display: none;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      border-radius: 4px;
+      font-size: 11px;
+      pointer-events: none;
+      z-index: 1000;
+      white-space: nowrap;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 500;
+    }
+
+    .modal-content {
+      width: 450px;
+      max-width: 90%;
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .active-pin-mode {
+      outline: 2px solid #0066cc;
+    }
+
+    .export-checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+
+    .export-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border: 1px solid rgba(128,128,128,0.3);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="theme-dark">
+
+  <div class="app-container">
+    <header class="panel">
+      <div class="header-titles">
+        <h2>Registrador de Eventos Históricos</h2>
+      </div>
+      <div class="header-controls">
+        <button id="btnSaveTxtModal" class="btn-primary">Salvar em texto</button>
+        <button id="btnNewRegistrar">Novo Registrador</button>
+        <button id="btnExportJson">Salvar JSON</button>
+        <button id="btnImportJsonTrigger">Carregar JSON</button>
+        <input type="file" id="jsonFileInput" style="display:none;" accept=".json">
+        <select id="themeSelect">
+          <option value="theme-dark">Escuro</option>
+          <option value="theme-light">Claro</option>
+          <option value="theme-ancient">Antiguidade</option>
+        </select>
+      </div>
+    </header>
+
+    <main>
+      <!-- SIDEBAR -->
+      <aside class="sidebar panel">
+        <div class="sidebar-section">
+          <h3>Categorias</h3>
+          <div style="display:flex; gap:4px;">
+            <input type="text" id="newCatName" placeholder="NOME" style="flex:1; text-transform:uppercase;">
+            <input type="color" id="newCatColor" value="#888888" style="width:30px; padding:0;">
+            <button id="btnAddCat" class="btn-success">+</button>
+          </div>
+          <div id="categoriesList" class="categories-wrapper"></div>
+        </div>
+
+        <hr style="opacity:0.2;">
+
+        <div class="sidebar-section" style="flex:1;">
+          <h3 id="formTitle">Novo Evento</h3>
+          <input type="hidden" id="eventId">
+          <input type="text" id="eventTitle" placeholder="Título do Evento">
+          <input type="text" id="eventYear" placeholder="Ano (ex: 2091 AC ou 2026)">
+          <textarea id="eventDesc" placeholder="Descrição opcional" style="height:60px; resize:none;"></textarea>
+          <input type="url" id="eventLink" placeholder="Link (https://...)">
+          
+          <label style="font-size:10px; opacity:0.8;">CATEGORIAS:</label>
+          <select id="eventCategories" multiple style="height:70px;"></select>
+          
+          <button id="btnSaveEvent" class="btn-primary">Salvar Evento</button>
+          <button id="btnCancelEdit" style="display:none;">Cancelar Edição</button>
+        </div>
+      </aside>
+
+      <!-- VIEWPORT PRINCIPAL -->
+      <section class="viewport">
+        <div class="top-bar panel">
+          <div class="date-filter">
+            <label>Período:</label>
+            <input type="text" id="startYearInput" value="3000 AC" style="width:75px;">
+            <span>até</span>
+            <input type="text" id="endYearInput" value="2026" style="width:75px;">
+            <button id="btnApplyFilter">Filtrar</button>
+            <button id="btnTotalLine">Linha total</button>
+            <button id="btnPinMode">Pin Período</button>
+          </div>
+
+          <div class="list-controls">
+            <div id="listExtraButtons" style="display:none; gap:6px;">
+              <button id="btnOpenSortModal">Ordenar Colunas</button>
+              <button id="btnResetColumns">Resetar Colunas</button>
+            </div>
+            <button id="btnToggleView" class="btn-primary">Modo Lista</button>
+          </div>
+        </div>
+
+        <div class="view-mode-container">
+          <!-- VISUALIZAÇÃO LINHA DO TEMPO HORIZONTAL -->
+          <div id="timelineView"></div>
+
+          <!-- VISUALIZAÇÃO MODO LISTA PROPORCIONAL MULTICATEGORIA -->
+          <div id="listViewWrapper">
+            <div id="listColumnsViewport" class="list-layout-container"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="hoverTooltip" class="tooltip"></div>
+
+  <!-- MODAL DE DETALHES DO EVENTO -->
+  <div id="eventModal" class="modal-overlay">
+    <div class="modal-content panel">
+      <h3 id="modalTitle"></h3>
+      <p id="modalYear" style="font-weight:bold; font-size:11px; opacity:0.8;"></p>
+      <p id="modalDesc" style="font-size:12px;"></p>
+      
+      <div id="modalConfirmDelete" style="display:none; background:rgba(255,0,0,0.1); padding:6px; border-radius:4px; text-align:center;">
+        <span style="font-size:11px;">Confirmar exclusão?</span>
+        <button id="btnConfirmDeleteYes" class="btn-danger" style="padding:2px 6px; margin-left:4px;">Sim</button>
+        <button id="btnConfirmDeleteNo" style="padding:2px 6px;">Não</button>
+      </div>
+
+      <div class="modal-actions">
+        <a id="modalLinkBtn" target="_blank" href="#"><button class="btn-primary">Link</button></a>
+        <button id="modalEditBtn">Editar</button>
+        <button id="modalCopyBtn">Copiar</button>
+        <button id="modalDeleteBtn" class="btn-danger">Excluir</button>
+        <button id="modalCloseBtn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE ORDENAÇÃO E VISIBILIDADE DAS COLUNAS -->
+  <div id="sortColumnsModal" class="modal-overlay">
+    <div class="modal-content panel">
+      <h3>Ordenar / Exibir Colunas</h3>
+      <p style="font-size:11px; opacity:0.8;">Arraste para reordenar ou marque para alterar visibilidade:</p>
+      
+      <div id="sortModalList" class="sort-modal-list"></div>
+
+      <div class="modal-actions">
+        <button id="btnSaveColumnOrder" class="btn-primary">Aplicar</button>
+        <button id="btnCloseSortModal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EXPORTAÇÃO EM TEXTO -->
+  <div id="exportTxtModal" class="modal-overlay">
+    <div class="modal-content panel">
+      <h3>Salvar em Texto (.txt)</h3>
+      <p style="font-size:11px; opacity:0.8;">Selecione as categorias para exportar os eventos ordenados por ano:</p>
+      
+      <div id="exportCategorySelector" class="export-checkbox-group"></div>
+
+      <div class="modal-actions">
+        <button id="btnDownloadTxt" class="btn-primary">Baixar TXT</button>
+        <button id="btnCloseExportModal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ESTADO DA APLICAÇÃO */
+    let state = {
+      categories: {
+        'GERAL': '#888888'
+      },
+      categoryOrder: ['GERAL'],
+      hiddenCategories: [],
+      events: [],
+      startYear: -3000,
+      endYear: 2026,
+      zoomLevel: 1,
+      isPinMode: false,
+      pinStep: 0,
+      pinStartYear: null,
+      currentView: 'timeline',
+      selectedEvent: null
+    };
+
+    const PIXELS_PER_YEAR = 4; // Escala vertical de proporcionalidade por ano
+
+    /* UTILITÁRIOS DE CORES E ANOS */
+    function getRandomReadableColor() {
+      const hue = Math.floor(Math.random() * 360);
+      return `hsl(${hue}, 70%, 45%)`;
+    }
+
+    function parseYear(yearStr) {
+      if (typeof yearStr === 'number') return yearStr;
+      if (!yearStr) return 0;
+      const str = yearStr.toString().trim().toUpperCase();
+      const isAC = str.includes('AC');
+      const num = parseInt(str.replace(/[^0-9]/g, ''), 10);
+      if (isNaN(num)) return 0;
+      return isAC ? -num : num;
+    }
+
+    function formatYear(yearNum) {
+      if (yearNum < 0) return `${Math.abs(yearNum)} AC`;
+      return `${yearNum}`;
+    }
+
+    /* INICIALIZAÇÃO */
+    document.addEventListener('DOMContentLoaded', () => {
+      initApp();
+
+      document.getElementById('themeSelect').addEventListener('change', (e) => {
+        document.body.className = e.target.value;
+      });
+
+      // Zoom via Ctrl + Wheel na Linha do Tempo
+      const timelineView = document.getElementById('timelineView');
+      timelineView.addEventListener('wheel', (e) => {
+        if (state.currentView !== 'timeline' || !e.ctrlKey) return;
+        e.preventDefault();
+        
+        const rect = timelineView.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const scrollLeft = timelineView.scrollLeft;
+        const pointOnTimeline = (scrollLeft + mouseX) / state.zoomLevel;
+
+        if (e.deltaY < 0) {
+          state.zoomLevel = Math.min(state.zoomLevel * 1.15, 8);
+        } else {
+          state.zoomLevel = Math.max(state.zoomLevel / 1.15, 1);
+        }
+
+        renderTimeline();
+        timelineView.scrollLeft = (pointOnTimeline * state.zoomLevel) - mouseX;
+      }, { passive: false });
+
+      // Binds de Botoes
+      document.getElementById('btnAddCat').addEventListener('click', addCategory);
+      document.getElementById('btnSaveEvent').addEventListener('click', saveEvent);
+      document.getElementById('btnCancelEdit').addEventListener('click', resetForm);
+      document.getElementById('btnApplyFilter').addEventListener('click', applyDateFilter);
+      document.getElementById('btnTotalLine').addEventListener('click', setTotalLinePeriod);
+      document.getElementById('btnPinMode').addEventListener('click', togglePinMode);
+      document.getElementById('btnToggleView').addEventListener('click', toggleViewMode);
+      document.getElementById('btnNewRegistrar').addEventListener('click', createNewRegistrar);
+      document.getElementById('btnResetColumns').addEventListener('click', resetColumns);
+      document.getElementById('btnOpenSortModal').addEventListener('click', openSortModal);
+
+      // Exportação TXT
+      document.getElementById('btnSaveTxtModal').addEventListener('click', openExportModal);
+      document.getElementById('btnCloseExportModal').addEventListener('click', closeExportModal);
+      document.getElementById('btnDownloadTxt').addEventListener('click', downloadTxtExport);
+
+      // JSON Import/Export
+      document.getElementById('btnExportJson').addEventListener('click', exportJson);
+      document.getElementById('btnImportJsonTrigger').addEventListener('click', () => {
+        document.getElementById('jsonFileInput').click();
+      });
+      document.getElementById('jsonFileInput').addEventListener('change', importJson);
+
+      // Modais
+      document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+      document.getElementById('btnCloseSortModal').addEventListener('click', closeSortModal);
+      document.getElementById('btnSaveColumnOrder').addEventListener('click', applyModalColumnSort);
+    });
+
+    function initApp() {
+      state.events = [{
+        title: "Chamado de Abraão e migração para Canaã",
+        year: "2091 AC",
+        description: "Deus chama Abraão para sair de sua terra natal, Ur dos Caldeus.",
+        link: "https://pt.wikipedia.org/wiki/Abra%C3%A3o",
+        categories: ["GERAL"]
+      }];
+
+      syncCategoryOrder();
+      renderCategories();
+      renderTimeline();
+    }
+
+    function syncCategoryOrder() {
+      Object.keys(state.categories).forEach(cat => {
+        if (!state.categoryOrder.includes(cat)) {
+          state.categoryOrder.push(cat);
+        }
+      });
+      state.categoryOrder = state.categoryOrder.filter(c => state.categories[c]);
+    }
+
+    /* CATEGORIAS */
+    function addCategory() {
+      const nameInput = document.getElementById('newCatName');
+      const colorInput = document.getElementById('newCatColor');
+      const name = nameInput.value.trim().toUpperCase();
+
+      if (!name) return;
+      state.categories[name] = colorInput.value;
+      nameInput.value = '';
+      
+      syncCategoryOrder();
+      renderCategories();
+      renderCurrentView();
+    }
+
+    function deleteCategory(catName) {
+      if (catName === 'GERAL') return;
+      delete state.categories[catName];
+      state.categoryOrder = state.categoryOrder.filter(c => c !== catName);
+      
+      state.events.forEach(ev => {
+        ev.categories = ev.categories.filter(c => c !== catName);
+        if (ev.categories.length === 0) ev.categories.push('GERAL');
+      });
+
+      renderCategories();
+      renderCurrentView();
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('categoriesList');
+      const selectForm = document.getElementById('eventCategories');
+
+      container.innerHTML = '';
+      selectForm.innerHTML = '';
+
+      Object.keys(state.categories).forEach(cat => {
+        const tag = document.createElement('div');
+        tag.className = 'category-tag';
+        tag.style.backgroundColor = state.categories[cat];
+        tag.style.color = '#fff';
+        tag.innerHTML = `<span>${cat}</span>`;
+        
+        if (cat !== 'GERAL') {
+          const btnDel = document.createElement('button');
+          btnDel.className = 'btn-del-cat';
+          btnDel.innerHTML = '&times;';
+          btnDel.onclick = () => deleteCategory(cat);
+          tag.appendChild(btnDel);
+        }
+        container.appendChild(tag);
+
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.innerText = cat;
+        selectForm.appendChild(opt);
+      });
+    }
+
+    /* EVENTOS */
+    function saveEvent() {
+      const id = document.getElementById('eventId').value;
+      const title = document.getElementById('eventTitle').value.trim();
+      const yearStr = document.getElementById('eventYear').value.trim();
+      const description = document.getElementById('eventDesc').value.trim();
+      const link = document.getElementById('eventLink').value.trim();
+      const selectedCats = Array.from(document.getElementById('eventCategories').selectedOptions).map(o => o.value);
+
+      if (!title || !yearStr) {
+        alert('Título e Ano são obrigatórios.');
+        return;
+      }
+
+      const formattedYear = formatYear(parseYear(yearStr));
+      const categories = selectedCats.length > 0 ? selectedCats : ['GERAL'];
+
+      const eventData = { title, year: formattedYear, description, link, categories };
+
+      if (id !== '') {
+        state.events[parseInt(id, 10)] = eventData;
+      } else {
+        state.events.push(eventData);
+      }
+
+      resetForm();
+      renderCurrentView();
+    }
+
+    function editEvent(index) {
+      const ev = state.events[index];
+      document.getElementById('eventId').value = index;
+      document.getElementById('eventTitle').value = ev.title;
+      document.getElementById('eventYear').value = ev.year;
+      document.getElementById('eventDesc').value = ev.description || '';
+      document.getElementById('eventLink').value = ev.link || '';
+      
+      const selectCat = document.getElementById('eventCategories');
+      Array.from(selectCat.options).forEach(opt => {
+        opt.selected = ev.categories.includes(opt.value);
+      });
+
+      document.getElementById('formTitle').innerText = 'Editar Evento';
+      document.getElementById('btnCancelEdit').style.display = 'block';
+      closeModal();
+    }
+
+    function resetForm() {
+      document.getElementById('eventId').value = '';
+      document.getElementById('eventTitle').value = '';
+      document.getElementById('eventYear').value = '';
+      document.getElementById('eventDesc').value = '';
+      document.getElementById('eventLink').value = '';
+      document.getElementById('eventCategories').selectedIndex = -1;
+      document.getElementById('formTitle').innerText = 'Novo Evento';
+      document.getElementById('btnCancelEdit').style.display = 'none';
+    }
+
+    function renderCurrentView() {
+      if (state.currentView === 'timeline') {
+        renderTimeline();
+      } else {
+        renderList();
+      }
+    }
+
+    /* VISUALIZAÇÃO LINHA DO TEMPO HORIZONTAL */
+    function renderTimeline() {
+      const container = document.getElementById('timelineView');
+      container.innerHTML = '';
+
+      const start = state.startYear;
+      const end = state.endYear;
+      const range = end - start;
+
+      state.categoryOrder.forEach(cat => {
+        const row = document.createElement('div');
+        row.className = 'timeline-row';
+
+        const label = document.createElement('div');
+        label.className = 'timeline-label';
+        label.innerText = cat;
+
+        const track = document.createElement('div');
+        track.className = 'timeline-track';
+        track.style.width = `${100 * state.zoomLevel}%`;
+
+        const catEvents = state.events.filter(e => e.categories.includes(cat));
+
+        catEvents.forEach(ev => {
+          const evYear = parseYear(ev.year);
+          if (evYear >= start && evYear <= end) {
+            const pct = (evYear - start) / (range || 1);
+            const pin = document.createElement('div');
+            pin.className = 'timeline-event-pin';
+            pin.style.left = `${pct * 100}%`;
+            pin.style.backgroundColor = state.categories[cat] || '#888';
+
+            pin.addEventListener('mouseenter', (e) => showTooltip(e, ev));
+            pin.addEventListener('mouseleave', hideTooltip);
+            pin.addEventListener('click', () => openModal(ev));
+
+            track.appendChild(pin);
+          }
+        });
+
+        track.addEventListener('click', (e) => handleTrackClick(e, track));
+
+        row.appendChild(label);
+        row.appendChild(track);
+        container.appendChild(row);
+      });
+    }
+
+    /* PERÍODO E PIN MODE */
+    function setTotalLinePeriod() {
+      if (state.events.length === 0) return;
+      let min = Infinity, max = -Infinity;
+
+      state.events.forEach(ev => {
+        const y = parseYear(ev.year);
+        if (y < min) min = y;
+        if (y > max) max = y;
+      });
+
+      if (min === max) { min -= 10; max += 10; }
+
+      state.startYear = min;
+      state.endYear = max;
+
+      document.getElementById('startYearInput').value = formatYear(min);
+      document.getElementById('endYearInput').value = formatYear(max);
+
+      renderCurrentView();
+    }
+
+    function togglePinMode() {
+      state.isPinMode = !state.isPinMode;
+      state.pinStep = 0;
+      const btn = document.getElementById('btnPinMode');
+      if (state.isPinMode) {
+        btn.classList.add('active-pin-mode');
+        btn.innerText = 'Clique início...';
+      } else {
+        btn.classList.remove('active-pin-mode');
+        btn.innerText = 'Pin Período';
+      }
+    }
+
+    function handleTrackClick(e, track) {
+      if (!state.isPinMode) return;
+
+      const rect = track.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = clickX / rect.width;
+      const clickedYear = Math.round(state.startYear + pct * (state.endYear - state.startYear));
+
+      if (state.pinStep === 0) {
+        state.pinStartYear = clickedYear;
+        state.pinStep = 1;
+        document.getElementById('btnPinMode').innerText = 'Clique fim...';
+      } else {
+        let y1 = state.pinStartYear;
+        let y2 = clickedYear;
+        if (y1 > y2) [y1, y2] = [y2, y1];
+
+        state.startYear = y1;
+        state.endYear = y2;
+        
+        document.getElementById('startYearInput').value = formatYear(y1);
+        document.getElementById('endYearInput').value = formatYear(y2);
+
+        togglePinMode();
+        renderCurrentView();
+      }
+    }
+
+    function applyDateFilter() {
+      state.startYear = parseYear(document.getElementById('startYearInput').value);
+      state.endYear = parseYear(document.getElementById('endYearInput').value);
+      renderCurrentView();
+    }
+
+    /* MODO LISTA PROPORCIONAL MULTICATEGORIA (SEM BARRA FIXA LATERAL) */
+    function toggleViewMode() {
+      const timelineView = document.getElementById('timelineView');
+      const listViewWrapper = document.getElementById('listViewWrapper');
+      const btnToggle = document.getElementById('btnToggleView');
+      const listExtraButtons = document.getElementById('listExtraButtons');
+
+      if (state.currentView === 'timeline') {
+        state.currentView = 'list';
+        timelineView.style.display = 'none';
+        listViewWrapper.style.display = 'block';
+        listExtraButtons.style.display = 'flex';
+        btnToggle.innerText = 'Modo Linha do Tempo';
+        renderList();
+      } else {
+        state.currentView = 'timeline';
+        listViewWrapper.style.display = 'none';
+        listExtraButtons.style.display = 'none';
+        timelineView.style.display = 'flex';
+        btnToggle.innerText = 'Modo Lista';
+        renderTimeline();
+      }
+    }
+
+    function renderList() {
+      const columnsViewport = document.getElementById('listColumnsViewport');
+      columnsViewport.innerHTML = '';
+
+      // 1. Filtrar categorias visíveis e eventos no intervalo
+      const visibleCategories = state.categoryOrder.filter(cat => !state.hiddenCategories.includes(cat));
+
+      const filteredEvents = state.events.filter(ev => {
+        const y = parseYear(ev.year);
+        return y >= state.startYear && y <= state.endYear;
+      });
+
+      if (filteredEvents.length === 0) {
+        columnsViewport.innerHTML = '<div style="padding:20px; opacity:0.6;">Nenhum evento registrado para o período.</div>';
+        return;
+      }
+
+      // 2. Calcular limites temporais para alinhamento proporcional
+      let minYear = state.startYear;
+      let maxYear = state.endYear;
+
+      const totalYears = Math.max(maxYear - minYear, 1);
+      const trackHeight = (totalYears * PIXELS_PER_YEAR) + 120; // Altura total proporcional
+
+      // 3. Renderizar Colunas das Categorias Visíveis
+      visibleCategories.forEach(cat => {
+        const col = document.createElement('div');
+        col.className = 'list-category-column panel';
+        col.draggable = true;
+        col.dataset.category = cat;
+
+        // Cabeçalho da Coluna
+        const header = document.createElement('div');
+        header.className = 'list-column-header';
+        header.style.backgroundColor = state.categories[cat] || '#888';
+        header.style.color = '#fff';
+        header.innerHTML = `
+          <span>${cat}</span>
+          <button class="btn-hide-column" title="Ocultar Coluna">🙈</button>
+        `;
+
+        header.querySelector('.btn-hide-column').onclick = (e) => {
+          e.stopPropagation();
+          hideColumn(cat);
+        };
+
+        // Pista Vertical Proporcional
+        const track = document.createElement('div');
+        track.className = 'vertical-events-track';
+        track.style.height = `${trackHeight}px`;
+
+        // Filtrar eventos da categoria
+        const catEvents = filteredEvents.filter(e => e.categories.includes(cat));
+
+        catEvents.forEach(ev => {
+          const evYear = parseYear(ev.year);
+          const topPosition = ((evYear - minYear) * PIXELS_PER_YEAR) + 15;
+
+          const card = document.createElement('div');
+          card.className = 'list-item-card panel';
+          card.style.top = `${topPosition}px`;
+          card.style.borderLeftColor = state.categories[cat] || '#0066cc';
+          card.innerHTML = `
+            <strong>${ev.title}</strong>
+            <span style="font-size:10px; opacity:0.8; color:${state.categories[cat] || 'inherit'};">${ev.year}</span>
+            ${ev.description ? `<p style="font-size:11px; opacity:0.7; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${ev.description}</p>` : ''}
+          `;
+
+          card.onclick = () => openModal(ev);
+          track.appendChild(card);
+        });
+
+        col.appendChild(header);
+        col.appendChild(track);
+        columnsViewport.appendChild(col);
+
+        // DRAG AND DROP DIRECT NAS COLUNAS
+        col.addEventListener('dragstart', handleColDragStart);
+        col.addEventListener('dragover', handleColDragOver);
+        col.addEventListener('drop', handleColDrop);
+        col.addEventListener('dragend', handleColDragEnd);
+      });
+    }
+
+    /* DRAG AND DROP NAS COLUNAS DIRETA DA TELA */
+    let draggedCat = null;
+
+    function handleColDragStart(e) {
+      draggedCat = this.dataset.category;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleColDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleColDrop(e) {
+      e.preventDefault();
+      const targetCat = this.dataset.category;
+      if (draggedCat && targetCat && draggedCat !== targetCat) {
+        const fromIndex = state.categoryOrder.indexOf(draggedCat);
+        const toIndex = state.categoryOrder.indexOf(targetCat);
+
+        state.categoryOrder.splice(fromIndex, 1);
+        state.categoryOrder.splice(toIndex, 0, draggedCat);
+
+        renderList();
+      }
+    }
+
+    function handleColDragEnd() {
+      this.classList.remove('dragging');
+      draggedCat = null;
+    }
+
+    /* OCULTAR E RESETAR COLUNAS */
+    function hideColumn(cat) {
+      if (!state.hiddenCategories.includes(cat)) {
+        state.hiddenCategories.push(cat);
+        renderList();
+      }
+    }
+
+    function resetColumns() {
+      state.hiddenCategories = [];
+      syncCategoryOrder();
+      renderList();
+    }
+
+    /* MODAL DE ORDENAÇÃO E VISIBILIDADE DAS COLUNAS */
+    function openSortModal() {
+      const list = document.getElementById('sortModalList');
+      list.innerHTML = '';
+
+      state.categoryOrder.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'sort-modal-item';
+        item.draggable = true;
+        item.dataset.category = cat;
+
+        const isHidden = state.hiddenCategories.includes(cat);
+
+        item.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="cursor:grab;">☰</span>
+            <strong>${cat}</strong>
+          </div>
+          <label style="font-size:11px; display:flex; align-items:center; gap:4px; cursor:pointer;">
+            <input type="checkbox" ${!isHidden ? 'checked' : ''} class="chk-col-vis"> Visível
+          </label>
+        `;
+
+        // Drag and Drop interno do Modal
+        item.addEventListener('dragstart', handleModalDragStart);
+        item.addEventListener('dragover', handleModalDragOver);
+        item.addEventListener('drop', handleModalDrop);
+        item.addEventListener('dragend', handleModalDragEnd);
+
+        list.appendChild(item);
+      });
+
+      document.getElementById('sortColumnsModal').style.display = 'flex';
+    }
+
+    function closeSortModal() {
+      document.getElementById('sortColumnsModal').style.display = 'none';
+    }
+
+    let modalDraggedItem = null;
+
+    function handleModalDragStart(e) {
+      modalDraggedItem = this;
+      this.classList.add('dragging');
+    }
+
+    function handleModalDragOver(e) {
+      e.preventDefault();
+      const container = document.getElementById('sortModalList');
+      const afterElement = getModalDragAfterElement(container, e.clientY);
+      if (afterElement == null) {
+        container.appendChild(modalDraggedItem);
+      } else {
+        container.insertBefore(modalDraggedItem, afterElement);
+      }
+    }
+
+    function getModalDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.sort-modal-item:not(.dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function handleModalDrop(e) {
+      e.preventDefault();
+    }
+
+    function handleModalDragEnd() {
+      this.classList.remove('dragging');
+      modalDraggedItem = null;
+    }
+
+    function applyModalColumnSort() {
+      const items = Array.from(document.querySelectorAll('#sortModalList .sort-modal-item'));
+      const newOrder = [];
+      const newHidden = [];
+
+      items.forEach(item => {
+        const cat = item.dataset.category;
+        const isChecked = item.querySelector('.chk-col-vis').checked;
+
+        newOrder.push(cat);
+        if (!isChecked) {
+          newHidden.push(cat);
+        }
+      });
+
+      state.categoryOrder = newOrder;
+      state.hiddenCategories = newHidden;
+
+      closeSortModal();
+      renderList();
+    }
+
+    /* MODAL DE EXPORTAÇÃO DE TEXTO (.TXT) */
+    function openExportModal() {
+      const container = document.getElementById('exportCategorySelector');
+      container.innerHTML = '';
+
+      Object.keys(state.categories).forEach(cat => {
+        const label = document.createElement('label');
+        label.className = 'export-checkbox-label';
+        label.innerHTML = `
+          <input type="checkbox" value="${cat}" checked>
+          <span>${cat}</span>
+        `;
+        container.appendChild(label);
+      });
+
+      document.getElementById('exportTxtModal').style.display = 'flex';
+    }
+
+    function closeExportModal() {
+      document.getElementById('exportTxtModal').style.display = 'none';
+    }
+
+    function downloadTxtExport() {
+      const checkedBoxes = document.querySelectorAll('#exportCategorySelector input[type="checkbox"]:checked');
+      const selectedCategories = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (selectedCategories.length === 0) {
+        alert('Selecione pelo menos uma categoria.');
+        return;
+      }
+
+      // Filtrar e preparar os eventos das categorias selecionadas
+      let exportedEvents = [];
+      state.events.forEach(ev => {
+        const matchingCats = ev.categories.filter(c => selectedCategories.includes(c));
+        if (matchingCats.length > 0) {
+          exportedEvents.push({
+            ...ev,
+            matchedCats: matchingCats,
+            numYear: parseYear(ev.year)
+          });
+        }
+      });
+
+      // Ordenação rigorosa por ano
+      exportedEvents.sort((a, b) => a.numYear - b.numYear);
+
+      // Gerar conteúdo em texto formatado
+      let txtContent = `REGISTRADOR DE EVENTOS HISTÓRICOS - EXPORTAÇÃO\n`;
+      txtContent += `Categorias: ${selectedCategories.join(', ')}\n`;
+      txtContent += `==================================================\n\n`;
+
+      exportedEvents.forEach(ev => {
+        txtContent += `[${ev.year}] - ${ev.title}\n`;
+        txtContent += `Categorias: ${ev.matchedCats.join(', ')}\n`;
+        if (ev.description) txtContent += `Descrição: ${ev.description}\n`;
+        if (ev.link) txtContent += `Link: ${ev.link}\n`;
+        txtContent += `--------------------------------------------------\n`;
+      });
+
+      // Disparar download do arquivo .txt
+      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `eventos_historicos_${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      closeExportModal();
+    }
+
+    /* MODAL DE EVENTO */
+    function showTooltip(e, event) {
+      const tooltip = document.getElementById('hoverTooltip');
+      tooltip.innerText = `${event.title} (${event.year})`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${e.clientX + 10}px`;
+      tooltip.style.top = `${e.clientY + 10}px`;
+    }
+
+    function hideTooltip() {
+      document.getElementById('hoverTooltip').style.display = 'none';
+    }
+
+    function openModal(event) {
+      state.selectedEvent = event;
+      document.getElementById('modalTitle').innerText = event.title;
+      document.getElementById('modalYear').innerText = event.year;
+      document.getElementById('modalDesc').innerText = event.description || 'Sem descrição.';
+
+      const linkBtn = document.getElementById('modalLinkBtn');
+      if (event.link && event.link.startsWith('http')) {
+        linkBtn.href = event.link;
+        linkBtn.style.display = 'inline-block';
+      } else {
+        linkBtn.style.display = 'none';
+      }
+
+      const eventIndex = state.events.indexOf(event);
+      
+      document.getElementById('modalEditBtn').onclick = () => editEvent(eventIndex);
+      document.getElementById('modalCopyBtn').onclick = () => {
+        navigator.clipboard.writeText(JSON.stringify(event, null, 2));
+        alert('Conteúdo copiado!');
+      };
+
+      document.getElementById('modalDeleteBtn').onclick = () => {
+        document.getElementById('modalConfirmDelete').style.display = 'block';
+      };
+
+      document.getElementById('btnConfirmDeleteYes').onclick = () => {
+        state.events.splice(eventIndex, 1);
+        document.getElementById('modalConfirmDelete').style.display = 'none';
+        closeModal();
+        renderCurrentView();
+      };
+
+      document.getElementById('btnConfirmDeleteNo').onclick = () => {
+        document.getElementById('modalConfirmDelete').style.display = 'none';
+      };
+
+      document.getElementById('eventModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('eventModal').style.display = 'none';
+      document.getElementById('modalConfirmDelete').style.display = 'none';
+    }
+
+    function createNewRegistrar() {
+      if (confirm("Deseja criar um novo registrador? Dados não salvos serão limpos.")) {
+        state.categories = { 'GERAL': '#888888' };
+        state.categoryOrder = ['GERAL'];
+        state.hiddenCategories = [];
+        state.events = [];
+        resetForm();
+        renderCategories();
+        renderCurrentView();
+      }
+    }
+
+    /* JSON */
+    function exportJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.events, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "registrador_eventos.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importJson(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          const items = Array.isArray(imported) ? imported : [imported];
+
+          items.forEach(item => {
+            if (item.categories && Array.isArray(item.categories)) {
+              item.categories.forEach(cat => {
+                const upperCat = cat.toUpperCase();
+                if (!state.categories[upperCat]) {
+                  state.categories[upperCat] = getRandomReadableColor();
+                }
+              });
+            } else {
+              item.categories = ['GERAL'];
+            }
+
+            const index = state.events.findIndex(e => e.title === item.title && parseYear(e.year) === parseYear(item.year));
+            if (index !== -1) {
+              state.events[index] = item;
+            } else {
+              state.events.push(item);
+            }
+          });
+
+          syncCategoryOrder();
+          renderCategories();
+          renderCurrentView();
+          alert('Eventos e categorias importados com sucesso!');
+        } catch (err) {
+          alert('Erro ao carregar arquivo JSON.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
